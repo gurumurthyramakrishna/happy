@@ -11,6 +11,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
+@CrossOrigin(origins = "*")
 @RequestMapping("/api/admin")
 public class AdminController {
     private final WorkerApplicationService appSvc;

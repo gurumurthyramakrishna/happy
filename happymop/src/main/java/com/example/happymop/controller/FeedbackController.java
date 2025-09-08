@@ -9,6 +9,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
+@CrossOrigin(origins = "*")
 @RequestMapping("/api/feedbacks")
 public class FeedbackController {
     private final FeedbackService svc;

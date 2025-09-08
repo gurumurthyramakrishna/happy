@@ -29,6 +29,7 @@
     <header>
       <h1>Admin Dashboard</h1>
       <div class="top-actions">
+        <button id="refreshBtn" class="btn btn-primary">Refresh Data</button>
         <button id="logoutBtn" class="btn">Logout</button>
       </div>
     </header>
@@ -148,6 +149,9 @@
   </div>
 
 <script>
+  // API_BASE configuration for IntelliJ server compatibility
+  const API_BASE = (window.location.protocol === 'file:' || window.location.origin === 'null' || window.location.port === '63342') ? 'http://localhost:8080' : window.location.origin;
+  
   // Simple admin authentication for local demo
   const ADMIN_KEY = 'isAdmin';
   const ADMIN_PASS = 'admin123'; // change or remove for production
@@ -169,9 +173,19 @@
       const val = document.getElementById('adminPass').value;
       if(val === ADMIN_PASS){
         localStorage.setItem(ADMIN_KEY,'true');
-        renderDashboard();
+        document.getElementById('authMsg').textContent = 'Login successful! Loading dashboard...';
+        document.getElementById('authMsg').style.color = 'green';
+        setTimeout(() => renderDashboard(), 500);
       } else {
-        document.getElementById('authMsg').textContent = 'Incorrect password.';
+        document.getElementById('authMsg').textContent = 'Incorrect password. Try: admin123';
+        document.getElementById('authMsg').style.color = 'red';
+      }
+    });
+    
+    // Allow Enter key to login
+    document.getElementById('adminPass').addEventListener('keypress', function(e){
+      if(e.key === 'Enter') {
+        document.getElementById('adminLoginBtn').click();
       }
     });
   }
@@ -184,55 +198,67 @@
     loadWorkers();
     loadApplications();
   const lb = document.getElementById('logoutBtn'); if(lb) lb.onclick = adminLogout;
+  const rb = document.getElementById('refreshBtn'); if(rb) rb.onclick = refreshAllData;
 
     document.getElementById('exportBookings').addEventListener('click', async function(){
-      try{ const res = await fetch('/api/bookings'); const all = await res.json(); download('bookings.json', JSON.stringify(all, null, 2)); }catch(e){ alert('Failed to export bookings'); }
+      try{ const res = await fetch(API_BASE + '/api/bookings'); const all = await res.json(); download('bookings.json', JSON.stringify(all, null, 2)); }catch(e){ alert('Failed to export bookings'); }
     });
     document.getElementById('exportFeedback').addEventListener('click', async function(){
-      try{ const res = await fetch('/api/feedbacks'); const all = await res.json(); download('feedbacks.json', JSON.stringify(all, null, 2)); }catch(e){ alert('Failed to export feedback'); }
+      try{ const res = await fetch(API_BASE + '/api/feedbacks'); const all = await res.json(); download('feedbacks.json', JSON.stringify(all, null, 2)); }catch(e){ alert('Failed to export feedback'); }
     });
 
     document.getElementById('clearBookings').addEventListener('click', async function(){
       if(confirm('Clear all bookings? This cannot be undone.')){
-        try{ const res = await fetch('/api/bookings'); const all = await res.json(); for(const b of all){ await fetch('/api/bookings/' + b.id, { method: 'DELETE' }); } loadBookings(); }catch(e){ alert('Failed to clear bookings'); }
+        try{ const res = await fetch(API_BASE + '/api/bookings'); const all = await res.json(); for(const b of all){ await fetch(API_BASE + '/api/bookings/' + b.id, { method: 'DELETE' }); } loadBookings(); }catch(e){ alert('Failed to clear bookings'); }
       }
     });
     document.getElementById('clearFeedback').addEventListener('click', async function(){
       if(confirm('Clear all feedback? This cannot be undone.')){
-        try{ const res = await fetch('/api/feedbacks'); const all = await res.json(); for(const f of all){ await fetch('/api/feedbacks/' + f.id, { method: 'DELETE' }).catch(()=>{}); } loadFeedback(); }catch(e){ alert('Failed to clear feedback'); }
+        try{ const res = await fetch(API_BASE + '/api/feedbacks'); const all = await res.json(); for(const f of all){ await fetch(API_BASE + '/api/feedbacks/' + f.id, { method: 'DELETE' }).catch(()=>{}); } loadFeedback(); }catch(e){ alert('Failed to clear feedback'); }
       }
     });
     document.getElementById('clearApps').addEventListener('click', async function(){
       if(confirm('Clear all worker applications? This cannot be undone.')){
-        try{ const res = await fetch('/api/admin/applications'); const all = await res.json(); for(const a of all){ await fetch('/api/admin/applications/' + a.id + '/reject', { method: 'POST' }).catch(()=>{}); } loadApplications(); }catch(e){ alert('Failed to clear applications'); }
+        try{ const res = await fetch(API_BASE + '/api/admin/applications'); const all = await res.json(); for(const a of all){ await fetch(API_BASE + '/api/admin/applications/' + a.id + '/reject', { method: 'POST' }).catch(()=>{}); } loadApplications(); }catch(e){ alert('Failed to clear applications'); }
       }
     });
 
     document.getElementById('addWorkerBtn').addEventListener('click', async function(){
       const name = prompt('Enter worker name:');
       if(name){
-        try{ const res = await fetch('/api/workers', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) }); if(!res.ok) throw new Error('create worker failed'); loadWorkers(); loadBookings(); }catch(e){ alert('Failed to add worker'); }
+        try{ const res = await fetch(API_BASE + '/api/workers', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) }); if(!res.ok) throw new Error('create worker failed'); loadWorkers(); loadBookings(); }catch(e){ alert('Failed to add worker'); }
       }
     });
   }
 
   function adminLogout(){
-  // clear admin and user demo flags and return to login UI without a full reload
-  localStorage.removeItem(ADMIN_KEY);
-  try{ localStorage.removeItem('isLoggedIn'); localStorage.removeItem('username'); }catch(e){}
-  // hide dashboard and show login form
-  const dash = document.getElementById('dashboard'); if(dash) dash.style.display = 'none';
-  showLogin();
+    // clear admin and user demo flags and return to login UI without a full reload
+    localStorage.removeItem(ADMIN_KEY);
+    try{ localStorage.removeItem('isLoggedIn'); localStorage.removeItem('username'); }catch(e){}
+    // hide dashboard and show login form
+    const dash = document.getElementById('dashboard'); 
+    if(dash) dash.style.display = 'none';
+    // Clear any cached data
+    window.bookingsCache = [];
+    showLogin();
+    alert('Logged out successfully');
   }
 
   async function loadBookings(){
     try{
-      const res = await fetch('/api/bookings');
-      if(!res.ok) throw new Error('Failed to load bookings');
+      console.log('Loading bookings from:', API_BASE + '/api/bookings');
+      const res = await fetch(API_BASE + '/api/bookings');
+      if(!res.ok) throw new Error('Failed to load bookings: ' + res.status + ' ' + res.statusText);
       const raw = await res.json();
+      console.log('Loaded bookings:', raw);
       const tbody = document.querySelector('#bookingsTable tbody');
       tbody.innerHTML = '';
       document.getElementById('bookingsCount').textContent = raw.length + ' booking(s)';
+      
+      if(raw.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#666;">No bookings found. Submit a booking from the frontend to see data here.</td></tr>';
+        return;
+      }
       raw.slice().reverse().forEach(b => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -267,6 +293,80 @@
       document.getElementById('applyFilter')?.addEventListener('click', applyBookingFilter);
       document.getElementById('clearFilter')?.addEventListener('click', function(){ document.getElementById('bookingSearch').value=''; document.getElementById('statusFilter').value=''; applyBookingFilter(); });
     }catch(err){ console.error(err); document.getElementById('bookingsCount').textContent = 'Failed to load bookings'; }
+  }
+
+  // Missing functions for booking management
+  async function deleteBooking(id){
+    if(confirm('Delete this booking?')){
+      try{
+        const res = await fetch(API_BASE + '/api/bookings/' + id, { method: 'DELETE' });
+        if(!res.ok) throw new Error('Delete failed');
+        await loadBookings();
+      }catch(err){ console.error(err); alert('Failed to delete booking'); }
+    }
+  }
+
+  async function loadFeedback(){
+    try{
+      const res = await fetch(API_BASE + '/api/feedbacks');
+      if(!res.ok) throw new Error('Failed to load feedback');
+      const raw = await res.json();
+      const tbody = document.querySelector('#feedbackTable tbody');
+      tbody.innerHTML = '';
+      document.getElementById('feedbackCount').textContent = raw.length + ' feedback(s)';
+      raw.slice().reverse().forEach(f => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(f.id||'')}</td>
+          <td>${escapeHtml(f.name||'')}</td>
+          <td>${f.rating||0}★</td>
+          <td>${escapeHtml(f.comments||'')}</td>
+          <td>${escapeHtml(f.email||'')}</td>
+          <td>${new Date(f.createdAt||Date.now()).toLocaleString()}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteFeedback('${f.id}')">Delete</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }catch(err){ console.error(err); document.getElementById('feedbackCount').textContent = 'Failed to load feedback'; }
+  }
+
+  async function deleteFeedback(id){
+    if(confirm('Delete this feedback?')){
+      try{
+        const res = await fetch(API_BASE + '/api/feedbacks/' + id, { method: 'DELETE' });
+        if(!res.ok) throw new Error('Delete failed');
+        await loadFeedback();
+      }catch(err){ console.error(err); alert('Failed to delete feedback'); }
+    }
+  }
+
+  // Utility function for HTML escaping
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Download utility for export functions
+  function download(filename, content) {
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
+    element.setAttribute('download', filename);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  }
+
+  // Refresh all data function
+  function refreshAllData() {
+    console.log('Refreshing all admin data...');
+    loadBookings();
+    loadFeedback();
+    loadWorkers();
+    loadApplications();
+    alert('Data refreshed successfully!');
   }
 
   function applyBookingFilter(){
@@ -318,7 +418,7 @@
   // Worker management
   async function loadWorkers(){
     try{
-      const res = await fetch('/api/workers'); if(!res.ok) throw new Error('Failed to load workers');
+      const res = await fetch(API_BASE + '/api/workers'); if(!res.ok) throw new Error('Failed to load workers');
       const raw = await res.json();
       const tbody = document.querySelector('#workersTable tbody'); tbody.innerHTML = '';
       raw.forEach(w=>{
@@ -340,7 +440,7 @@
   // Worker Applications
   async function loadApplications(){
     try{
-      const res = await fetch('/api/admin/applications'); if(!res.ok) throw new Error('Failed');
+      const res = await fetch(API_BASE + '/api/admin/applications'); if(!res.ok) throw new Error('Failed');
       const raw = await res.json();
       const tbody = document.querySelector('#appsTable tbody'); tbody.innerHTML = '';
       document.getElementById('appsInfo').textContent = raw.length + ' application(s)';
@@ -369,7 +469,7 @@
 
   async function approveApplication(id){
     try{
-      const res = await fetch('/api/admin/applications/' + id + '/approve', { method: 'POST' });
+      const res = await fetch(API_BASE + '/api/admin/applications/' + id + '/approve', { method: 'POST' });
       if(!res.ok) throw new Error('Approve failed');
       await loadApplications(); await loadWorkers();
       alert('Application approved and worker added.');
@@ -377,7 +477,7 @@
   }
 
   async function rejectApplication(id){
-    try{ const res = await fetch('/api/admin/applications/' + id + '/reject', { method: 'POST' }); if(!res.ok) throw new Error('Reject failed'); await loadApplications(); }catch(err){ console.error(err); alert('Failed to reject application'); }
+    try{ const res = await fetch(API_BASE + '/api/admin/applications/' + id + '/reject', { method: 'POST' }); if(!res.ok) throw new Error('Reject failed'); await loadApplications(); }catch(err){ console.error(err); alert('Failed to reject application'); }
   }
 
   document.getElementById('refreshApps')?.addEventListener('click', loadApplications);
@@ -386,11 +486,11 @@
   loadWorkers(); loadApplications();
 
   async function addWorker(name){
-    try{ await fetch('/api/workers', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) }); await loadWorkers(); await loadBookings(); }catch(err){ console.error(err); alert('Failed to add worker'); }
+    try{ await fetch(API_BASE + '/api/workers', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) }); await loadWorkers(); await loadBookings(); }catch(err){ console.error(err); alert('Failed to add worker'); }
   }
 
   async function deleteWorker(id){
-    try{ const res = await fetch('/api/workers/' + id, { method: 'DELETE' }); if(!res.ok) throw new Error('delete failed'); await loadWorkers(); await loadBookings(); }catch(err){ console.error(err); alert('Failed to delete worker'); }
+    try{ const res = await fetch(API_BASE + '/api/workers/' + id, { method: 'DELETE' }); if(!res.ok) throw new Error('delete failed'); await loadWorkers(); await loadBookings(); }catch(err){ console.error(err); alert('Failed to delete worker'); }
   }
 
   function openAssignDialog(bookingId){
@@ -402,16 +502,16 @@
   async function assignWorker(bookingId, workerId){
     try{
   // Fetch the booking by id, update the workerAssigned/status and send a PUT to update server-side
-  const bRes = await fetch('/api/bookings/' + bookingId);
+  const bRes = await fetch(API_BASE + '/api/bookings/' + bookingId);
   if(!bRes.ok) return alert('Booking not found');
   const b = await bRes.json();
   // fetch worker
-  const wRes = await fetch('/api/workers/' + workerId);
+  const wRes = await fetch(API_BASE + '/api/workers/' + workerId);
   if(!wRes.ok) return alert('Worker not found');
   const w = await wRes.json();
   b.workerAssigned = w.name;
   b.status = 'assigned';
-  const upd = await fetch('/api/bookings/' + bookingId, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(b) });
+  const upd = await fetch(API_BASE + '/api/bookings/' + bookingId, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(b) });
   if(!upd.ok) throw new Error('Update failed');
   await loadBookings(); await loadWorkers();
     }catch(err){ console.error(err); alert('Failed to assign worker'); }
@@ -419,11 +519,11 @@
 
   async function markCompleted(bookingId){
     try{
-  const res = await fetch('/api/bookings/' + bookingId);
+  const res = await fetch(API_BASE + '/api/bookings/' + bookingId);
   if(!res.ok) return alert('Booking not found');
   const b = await res.json();
   b.status = 'completed';
-  const upd = await fetch('/api/bookings/' + bookingId, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(b) });
+  const upd = await fetch(API_BASE + '/api/bookings/' + bookingId, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(b) });
   if(!upd.ok) throw new Error('Update failed');
   await loadBookings(); await loadWorkers();
     }catch(err){ console.error(err); alert('Failed to mark completed'); }

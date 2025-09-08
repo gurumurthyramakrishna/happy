@@ -9,6 +9,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
+@CrossOrigin(origins = "*")
 @RequestMapping("/api/users")
 public class UserController {
     private final UserService svc;
@@ -17,10 +18,53 @@ public class UserController {
     @GetMapping
     public List<User> all(){ return svc.all(); }
 
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody User u){
+        try {
+            // Check if user already exists
+            if (svc.findByEmail(u.getEmail()).isPresent()) {
+                return ResponseEntity.badRequest().body("{\"error\":\"User already exists with this email\"}");
+            }
+            User created = svc.create(u);
+            // Don't return password in response
+            created.setPassword(null);
+            return ResponseEntity.created(URI.create("/api/users/"+created.getId())).body(created);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("{\"error\":\"Registration failed\"}");
+        }
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest){
+        try {
+            User user = svc.findByEmail(loginRequest.getEmail()).orElse(null);
+            if (user != null && user.getPassword().equals(loginRequest.getPassword())) {
+                // Don't return password in response
+                user.setPassword(null);
+                return ResponseEntity.ok(user);
+            } else {
+                return ResponseEntity.badRequest().body("{\"error\":\"Invalid email or password\"}");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("{\"error\":\"Login failed\"}");
+        }
+    }
+
     @PostMapping
     public ResponseEntity<User> create(@RequestBody User u){
         User created = svc.create(u);
         return ResponseEntity.created(URI.create("/api/users/"+created.getId())).body(created);
+    }
+
+    // Inner class for login request
+    public static class LoginRequest {
+        private String email;
+        private String password;
+        
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+        public String getPassword() { return password; }
+        public void setPassword(String password) { this.password = password; }
     }
 }
 

@@ -62,19 +62,69 @@
 
     const payload = { name, email, phone, password, address };
     try{
-      const res = await fetch('/api/users', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      const API_BASE = (window.location.protocol === 'file:' || window.location.origin === 'null' || window.location.port === '63342') ? 'http://localhost:8080' : window.location.origin;
+      console.log('Attempting registration to:', API_BASE + '/api/users/register');
+      console.log('Payload:', payload);
+      
+      msgEl.style.color = 'blue';
+      msgEl.textContent = 'Creating account...';
+      
+      const res = await fetch(API_BASE + '/api/users/register', { 
+        method: 'POST', 
+        headers: {'Content-Type':'application/json'}, 
+        body: JSON.stringify(payload),
+        mode: 'cors'
+      });
+      
+      console.log('Response status:', res.status);
+      
       if(!res.ok){
-        const txt = await res.text(); throw new Error('Server error: ' + res.status + ' ' + txt);
+        const txt = await res.text();
+        console.log('Error response:', txt);
+        try {
+          const errorData = JSON.parse(txt);
+          msgEl.style.color = 'red';
+          msgEl.textContent = errorData.error || 'Registration failed. Please try again.';
+        } catch (parseErr) {
+          msgEl.style.color = 'red';
+          msgEl.textContent = 'Server error: ' + res.status + '. Please try again.';
+        }
+        return;
       }
+      
       const created = await res.json();
+      console.log('Registration successful:', created);
+      
       // Keep simple UX: set client-side logged-in state
       localStorage.setItem('isLoggedIn','true');
       localStorage.setItem('username', created.name || name);
-      msgEl.textContent = 'Account created — redirecting...';
-      setTimeout(()=>{ window.location.href = 'index.html'; }, 900);
+      localStorage.setItem('userId', created.id);
+      msgEl.style.color = 'green';
+      msgEl.textContent = 'Account created successfully! Redirecting...';
+      setTimeout(()=>{ window.location.href = 'index.html'; }, 1500);
     }catch(err){
-      console.error(err);
-      msgEl.textContent = 'Failed to create account. Try again later.';
+      console.error('Registration error:', err);
+      msgEl.style.color = 'orange';
+      msgEl.textContent = 'Server unavailable. Using offline mode...';
+      
+      // Fallback: Store user data locally for demo
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      if (users.find(u => u.email === email)) {
+        msgEl.style.color = 'red';
+        msgEl.textContent = 'User already exists with this email';
+        return;
+      }
+      
+      const newUser = { id: Date.now(), name, email, phone, address };
+      users.push(newUser);
+      localStorage.setItem('users', JSON.stringify(users));
+      
+      localStorage.setItem('isLoggedIn','true');
+      localStorage.setItem('username', name);
+      localStorage.setItem('userId', newUser.id);
+      msgEl.style.color = 'green';
+      msgEl.textContent = 'Account created (offline mode)! Redirecting...';
+      setTimeout(()=>{ window.location.href = 'index.html'; }, 1500);
     }
   });
 </script>

@@ -6,4 +6,5 @@ import java.util.Optional;
 
 public interface ServiceRepository extends JpaRepository<ServiceItem, Long> {
     Optional<ServiceItem> findByCode(String code);
+    Optional<ServiceItem> findByTitle(String title);
 }
