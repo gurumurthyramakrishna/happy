@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Our Services</title>
+    <style>
+        body{font-family:Arial,Helvetica,sans-serif;background:#f7f8fa;color:#222;margin:0;padding:20px}
+        .container{max-width:1000px;margin:0 auto}
+        header{display:flex;justify-content:space-between;align-items:center}
+        h1{margin:0 0 12px}
+        .lead{color:#555;margin-bottom:18px}
+        .grid{display:flex;gap:20px;flex-wrap:wrap}
+        .card{background:#fff;border-radius:8px;padding:18px;width:calc(33% - 14px);box-shadow:0 2px 8px rgba(0,0,0,0.06);cursor:pointer;transition:transform .12s,box-shadow .12s}
+        .card:hover{transform:translateY(-6px);box-shadow:0 8px 22px rgba(0,0,0,0.08)}
+        .card h3{margin-top:0}
+        .services-panel{margin-top:18px}
+        .service-item{background:#fff;padding:14px;border-radius:8px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.04)}
+        .service-item .meta{color:#666;font-size:14px}
+        .btn{background:#0078d4;color:#fff;padding:8px 12px;border-radius:6px;border:none;text-decoration:none}
+        .back{background:#e9ecef;color:#222;padding:6px 10px;border-radius:6px;border:none}
+        @media (max-width:900px){ .card{width:100%} }
+        .muted{color:#666}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Our Cleaning Services</h1>
+        <nav>
+            <a href="index.html">Home</a> • <a href="Bookslot.html">Book Now</a>
+        </nav>
+    </header>
+
+    <p class="lead">Choose a category to see available services. Click any service to book a slot.</p>
+
+    <div id="categories" class="grid">
+        <div class="card" data-category="commercial">
+            <h3>Commercial</h3>
+            <p class="muted">Services for offices, retail and other commercial spaces.</p>
+        </div>
+        <div class="card" data-category="residential">
+            <h3>Residential</h3>
+            <p class="muted">Home cleaning, laundry, housekeeping and cooking support.</p>
+        </div>
+        <div class="card" data-category="other">
+            <h3>Other Services</h3>
+            <p class="muted">Specialty services like water-tank cleaning and car washing.</p>
+        </div>
+    </div>
+
+    <div id="servicesArea" class="services-panel"></div>
+</div>
+
+<script>
+    const data = {
+        commercial: [
+            { id: 'office', title: 'Office Cleaning', desc: 'Daily, weekly or one-off office cleaning to keep your workspace immaculate.' },
+            { id: 'deep_commercial', title: 'Deep Cleaning', desc: 'In-depth cleaning for carpets, upholstery, vents and hard-to-reach areas.' },
+            { id: 'housekeeping_commercial', title: 'Housekeeping', desc: 'Regular upkeep, trash removal and light maintenance for commercial premises.' },
+            { id: 'gardening', title: 'Gardening & Grounds', desc: 'Grounds keeping, lawn care and garden maintenance for commercial properties.' }
+        ],
+        residential: [
+            { id: 'washing', title: 'Washing & Laundry', desc: 'Clothes washing, drying and folding services.' },
+            { id: 'cleaning', title: 'Home Cleaning', desc: 'Regular or deep cleaning for bedrooms, bathrooms, kitchen and living areas.' },
+            { id: 'housekeeping_res', title: 'Housekeeping', desc: 'Daily or scheduled housekeeping and tidying.' },
+            { id: 'cooking', title: 'Cooking Support', desc: 'Meal prep and basic cooking assistance as required.' }
+        ],
+        other: [
+            { id: 'water_tank', title: 'Water-tank Cleaning', desc: 'Safe and thorough cleaning of overhead and underground water tanks.' },
+            { id: 'car_wash', title: 'Car Washing', desc: 'Exterior & interior car cleaning, detailing services.' }
+        ]
+    };
+
+    const categoriesEl = document.getElementById('categories');
+    const servicesArea = document.getElementById('servicesArea');
+
+    categoriesEl.addEventListener('click', (e) => {
+        const card = e.target.closest('.card');
+        if(!card) return;
+        const cat = card.getAttribute('data-category');
+        showServices(cat);
+    });
+
+    function showServices(category){
+        const list = data[category] || [];
+        servicesArea.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <h2 style="margin:0">${capitalize(category)} Services</h2>
+                <div>
+                    <button class="back" id="backBtn">Back</button>
+                </div>
+            </div>
+        `;
+        const container = document.createElement('div');
+        list.forEach(s => {
+            const item = document.createElement('div');
+            item.className = 'service-item';
+            item.innerHTML = `
+                <div>
+                    <div style="font-weight:700">${s.title}</div>
+                    <div class="meta">${s.desc}</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <a class="btn" href="Bookslot.html?service=${encodeURIComponent(s.id)}&category=${encodeURIComponent(category)}">Book</a>
+                </div>
+            `;
+            container.appendChild(item);
+        });
+        servicesArea.appendChild(container);
+        document.getElementById('backBtn').addEventListener('click', () => { servicesArea.innerHTML = ''; window.scrollTo({top:0,behavior:'smooth'}); });
+        // scroll to services
+        servicesArea.scrollIntoView({behavior:'smooth'});
+    }
+
+    function capitalize(str){ return str.charAt(0).toUpperCase() + str.slice(1); }
+</script>
+</body>
+</html>

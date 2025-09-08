@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Worker Registration - Happy Mop</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f8;color:#222;margin:0;padding:24px}
+    .container{max-width:720px;margin:0 auto}
+    .card{background:#fff;padding:18px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.06)}
+    label{display:block;margin-top:12px;font-weight:700}
+    input[type=text], input[type=email], textarea, select{width:100%;padding:10px;border:1px solid #e6e9ee;border-radius:8px;box-sizing:border-box}
+    .checkboxes{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .checkboxes label{font-weight:500}
+    .btn{background:#0078d4;color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;margin-top:12px}
+    .muted{color:#666;margin-top:10px}
+    .success{color:green;margin-top:10px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Worker Registration</h1>
+    <p class="muted">Fill this form to apply as a worker. Your application will be reviewed and approved by admin.</p>
+
+    <div class="card">
+      <form id="workerForm">
+        <label for="wname">Full name</label>
+        <input id="wname" type="text" required>
+
+        <label for="wemail">Email</label>
+        <input id="wemail" type="email">
+
+        <label for="wphone">Phone</label>
+        <input id="wphone" type="text" required placeholder="e.g., 9876543210">
+
+        <label>Services you provide</label>
+        <div class="checkboxes">
+          <label><input type="checkbox" value="home"> Home Cleaning</label>
+          <label><input type="checkbox" value="office"> Office Cleaning</label>
+          <label><input type="checkbox" value="deep"> Deep Cleaning</label>
+          <label><input type="checkbox" value="gardening"> Gardening</label>
+          <label><input type="checkbox" value="laundry"> Washing / Laundry</label>
+          <label><input type="checkbox" value="car"> Car Washing</label>
+          <label><input type="checkbox" value="cooking"> Cooking Support</label>
+        </div>
+
+        <label for="experience">Experience / Notes</label>
+        <textarea id="experience" placeholder="Years of experience, strengths, availability"></textarea>
+
+        <label for="area">Preferred areas / City</label>
+        <input id="area" type="text" placeholder="e.g., Bangalore, Indiranagar">
+
+        <button class="btn" type="submit">Submit Application</button>
+        <div id="resp" class="muted"></div>
+      </form>
+    </div>
+
+    <p class="muted">After submitting, admin will review your application. You will be notified when approved.</p>
+  </div>
+
+<script>
+  document.getElementById('workerForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const name = document.getElementById('wname').value.trim();
+    const email = document.getElementById('wemail').value.trim();
+    const phone = document.getElementById('wphone').value.trim();
+    const experience = document.getElementById('experience').value.trim();
+    const area = document.getElementById('area').value.trim();
+    const services = Array.from(document.querySelectorAll('.checkboxes input:checked')).map(i=>i.value);
+    const respEl = document.getElementById('resp');
+    if(!name || !phone){ respEl.textContent = 'Please provide name and phone.'; return; }
+
+  const payload = { name, email, phone, services: services.join(','), experience, area };
+    try{
+      const res = await fetch('/api/admin/applications', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      if(!res.ok) throw new Error('Server error ' + res.status);
+      const created = await res.json();
+      respEl.textContent = 'Application submitted — you will be contacted after admin review.';
+      respEl.className = 'success';
+      document.getElementById('workerForm').reset();
+    }catch(err){
+      console.error(err);
+      respEl.textContent = 'Failed to submit application. Please try again later.';
+      respEl.className = 'muted';
+    }
+  });
+</script>
+</body>
+</html>

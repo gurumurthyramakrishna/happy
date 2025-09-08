@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Sign Up - Happy Mop</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f8;color:#222;margin:0;padding:24px}
+    .container{max-width:520px;margin:0 auto}
+    .card{background:#fff;padding:20px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.06)}
+    label{display:block;margin-top:12px;font-weight:700}
+    input{width:100%;padding:10px;border:1px solid #e6e9ee;border-radius:8px;box-sizing:border-box}
+    .btn{background:#0078d4;color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;margin-top:14px}
+    .muted{color:#666;margin-top:8px}
+    .small{font-size:13px;color:#666}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Create an account</h1>
+    <p class="muted">Sign up as a customer to book services quickly.</p>
+
+    <div class="card">
+      <form id="signupForm">
+        <label for="name">Full name</label>
+        <input id="name" type="text" required>
+
+        <label for="email">Email</label>
+        <input id="email" type="email" required>
+
+        <label for="phone">Phone</label>
+        <input id="phone" type="text" required placeholder="9876543210">
+
+        <label for="password">Password</label>
+        <input id="password" type="password" required>
+
+        <label for="confirm">Confirm password</label>
+        <input id="confirm" type="password" required>
+
+        <label for="address">Address (optional)</label>
+        <input id="address" type="text" placeholder="City, area, street">
+
+        <button class="btn" type="submit">Create account</button>
+        <div id="msg" class="small"></div>
+      </form>
+      <p class="small">Already have an account? <a href="login.html">Login</a></p>
+    </div>
+  </div>
+
+<script>
+  document.getElementById('signupForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const password = document.getElementById('password').value;
+    const confirm = document.getElementById('confirm').value;
+    const address = document.getElementById('address').value.trim();
+    const msgEl = document.getElementById('msg');
+    if(!name || !email || !phone || !password){ msgEl.textContent = 'Please fill required fields.'; return; }
+    if(password !== confirm){ msgEl.textContent = 'Passwords do not match.'; return; }
+
+    const payload = { name, email, phone, password, address };
+    try{
+      const res = await fetch('/api/users', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      if(!res.ok){
+        const txt = await res.text(); throw new Error('Server error: ' + res.status + ' ' + txt);
+      }
+      const created = await res.json();
+      // Keep simple UX: set client-side logged-in state
+      localStorage.setItem('isLoggedIn','true');
+      localStorage.setItem('username', created.name || name);
+      msgEl.textContent = 'Account created — redirecting...';
+      setTimeout(()=>{ window.location.href = 'index.html'; }, 900);
+    }catch(err){
+      console.error(err);
+      msgEl.textContent = 'Failed to create account. Try again later.';
+    }
+  });
+</script>
+</body>
+</html>

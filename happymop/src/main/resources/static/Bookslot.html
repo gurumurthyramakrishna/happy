@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Book a Cleaning Slot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root{--brand:#005544;--accent:#0078d4}
+        body{font-family:Inter,Arial,Helvetica,sans-serif;background:#f4f6f8;color:#222;margin:0;padding:24px}
+        .container{max-width:900px;margin:0 auto}
+        header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+        h1{margin:0}
+        .card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 6px 24px rgba(15,15,15,0.06)}
+        .steps{display:grid;grid-template-columns:1fr;gap:14px}
+        @media(min-width:900px){ .steps{grid-template-columns:2fr 1fr} }
+        label{font-weight:600}
+        input,select,textarea{border:1px solid #e6e9ee;padding:10px;border-radius:8px;width:100%}
+        .btn-primary{background:var(--accent);border:none}
+        .summary{background:#f9fafb;padding:14px;border-radius:8px;border:1px solid #eef3f8}
+        .muted{color:#6b7280}
+        .service-list{display:flex;flex-direction:column;gap:8px}
+        .service-pill{background:#fff;border:1px solid #e6e9ee;padding:10px;border-radius:8px;display:flex;justify-content:space-between;align-items:center}
+        .service-pill.selected{border-color:var(--accent);box-shadow:0 4px 18px rgba(0,120,212,0.08)}
+        .footer-note{font-size:13px;color:#6b7280;margin-top:8px}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Book a Cleaning Slot</h1>
+        <nav><a href="index.html">Home</a> • <a href="Services.html">Services</a></nav>
+    </header>
+
+    <div class="card steps">
+        <div>
+            <h4>Choose location, date & time</h4>
+            <div style="margin-top:10px">
+                <label for="location">Location</label>
+                <input id="location" placeholder="Enter your address or area">
+
+                <div class="row" style="margin-top:10px;gap:10px;">
+                    <div style="flex:1;min-width:140px">
+                        <label for="date">Date</label>
+                        <input id="date" type="date">
+                    </div>
+                    <div style="flex:1;min-width:140px">
+                        <label for="time">Time</label>
+                        <input id="time" type="time">
+                    </div>
+                </div>
+
+                <div style="margin-top:14px">
+                    <label for="serviceSelect">Select Service</label>
+                    <div id="serviceSelect" class="service-list"></div>
+                    <!-- Cart showing selected services -->
+                    <div id="cartBox" style="margin-top:12px;display:none;background:#fff;border:1px solid #e6e9ee;padding:10px;border-radius:8px">
+                        <strong>Your cart</strong>
+                        <div id="cartItems" style="margin-top:8px"></div>
+                        <div style="margin-top:8px"><strong>Total: <span id="cartTotal">—</span></strong></div>
+                    </div>
+                </div>
+
+                <div style="margin-top:12px">
+                    <label for="workerSelect">Select Worker (optional)</label>
+                    <select id="workerSelect"><option value="">Any available</option></select>
+                </div>
+
+                <div style="margin-top:12px;display:flex;gap:10px;">
+                    <button id="prevStep" class="btn btn-light">Reset</button>
+                    <button id="proceed" class="btn btn-primary">Proceed to Payment</button>
+                </div>
+
+                <div class="footer-note">Tip: choose a service from the list. You can change it before confirming payment.</div>
+            </div>
+        </div>
+
+        <aside>
+            <h5>Booking summary</h5>
+            <div class="summary" id="summaryBox">
+                <div><strong>Service:</strong> <span id="sumService">(none)</span></div>
+                <div><strong>Location:</strong> <span id="sumLocation">(not set)</span></div>
+                <div><strong>Date & Time:</strong> <span id="sumDate">-</span> <span id="sumTime"></span></div>
+                <div><strong>Worker:</strong> <span id="sumWorker">Assigned later</span></div>
+                <div style="margin-top:10px"><strong>Estimated price:</strong> <span id="sumPrice">—</span></div>
+                <div style="margin-top:12px">
+                    <button id="editDetails" class="btn btn-light">Edit details</button>
+                </div>
+            </div>
+
+            <div style="margin-top:12px" class="card">
+                <h6 style="margin-top:0">Payment</h6>
+                <p class="muted">We accept card payments. No real transaction is made in this demo.</p>
+                <div style="display:none" id="paymentArea">
+                    <div style="margin-bottom:8px"><strong>Amount to pay: <span id="payAmount">—</span></strong></div>
+                    <label for="cardName">Name on card</label>
+                    <input id="cardName" placeholder="Full name">
+                    <label for="cardNumber" style="margin-top:8px">Card number</label>
+                    <input id="cardNumber" placeholder="4242 4242 4242 4242">
+                    <div style="display:flex;gap:8px;margin-top:8px">
+                        <input id="cardExpiry" placeholder="MM/YY">
+                        <input id="cardCvv" placeholder="CVV">
+                    </div>
+                    <div style="margin-top:10px">
+                        <button id="payNow" class="btn btn-primary">Pay & Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <div id="confirmation" style="display:none;margin-top:16px" class="card">
+        <h4>Booking complete</h4>
+        <p id="confirmMsg" class="muted"></p>
+        <div id="bookingDetails" style="margin-top:8px"></div>
+        <div style="margin-top:12px"><a href="index.html">Return to Home</a></div>
+    </div>
+</div>
+
+<script>
+    // services will be fetched from backend /api/services
+    // API_BASE chooses the backend host: when the page is opened via file:// we fallback to localhost:8080
+    const API_BASE = (window.location.protocol === 'file:' || window.location.origin === 'null') ? 'http://localhost:8080' : window.location.origin;
+    let services = [];
+    let lastServiceError = null;
+    let cart = []; // array of service codes/ids
+
+    // workers will be loaded from server
+    let workers = [];
+
+    async function loadWorkersForBooking(){
+        try{
+            const url = API_BASE + '/api/workers';
+            console.debug('Fetching workers from', url);
+            const res = await fetch(url, { method: 'GET', mode: 'cors' });
+            if(!res.ok) throw new Error('Failed to load workers: ' + res.status);
+            workers = await res.json();
+        }catch(err){ console.warn('Could not load workers, using empty list', err); workers = []; }
+        renderWorkerSelect();
+    }
+
+    async function loadServices(){
+        lastServiceError = null;
+        try{
+            const url = API_BASE + '/api/services';
+            console.debug('Fetching services from', url);
+            const res = await fetch(url, { method: 'GET', mode: 'cors' });
+            if(!res.ok){
+                const body = await res.text().catch(()=>'');
+                throw new Error('Service API returned ' + res.status + ' ' + res.statusText + (body?(' - '+body):''));
+            }
+            services = await res.json();
+        }catch(err){
+            lastServiceError = err && err.message ? String(err.message) : String(err);
+            console.warn('Falling back to embedded services list; reason:', lastServiceError);
+            services = [
+                { id: 1, title: 'Home Cleaning', price: 1200 },
+                { id: 2, title: 'Washing & Laundry', price: 800 },
+                { id: 3, title: 'Deep Cleaning (Commercial)', price: 3500 }
+            ];
+        }
+        renderServiceList();
+        updateSummaryUI();
+        showServiceDebug();
+    }
+
+    // debug helper
+    function showServiceDebug(){
+        console.log('services loaded:', services);
+        // remove any previous debug message
+        const prev = document.getElementById('service-debug-msg'); if(prev) prev.remove();
+        if(!services || services.length === 0){
+            const el = document.createElement('div'); el.id = 'service-debug-msg'; el.style.color='red'; el.textContent='No services available from server.' + (lastServiceError?(' Reason: '+lastServiceError):'');
+            serviceSelectEl.parentElement.insertBefore(el, serviceSelectEl);
+        } else if(lastServiceError){
+            const el = document.createElement('div'); el.id = 'service-debug-msg'; el.style.color='orange'; el.textContent='Loaded fallback services — original fetch failed: '+lastServiceError;
+            serviceSelectEl.parentElement.insertBefore(el, serviceSelectEl);
+        }
+    }
+
+    const serviceSelectEl = document.getElementById('serviceSelect');
+
+    function renderServiceList(){
+        serviceSelectEl.innerHTML = '';
+        services.forEach(s => {
+            const div = document.createElement('div');
+            div.className = 'service-pill' + (cart.includes(Number(s.id)) ? ' selected' : '');
+            div.dataset.id = s.id;
+            div.innerHTML = `
+                <div>
+                    <div style="font-weight:700">${s.title}</div>
+                    <div class="muted">Approx. ₹${s.price}</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <button class="btn btn-sm btn-outline" data-id="${s.id}">Add</button>
+                    <a class="btn" href="Bookslot.html?service=${encodeURIComponent(s.id)}">Open</a>
+                </div>
+            `;
+            serviceSelectEl.appendChild(div);
+        });
+        // wire select buttons
+        serviceSelectEl.querySelectorAll('button[data-id]').forEach(b => b.addEventListener('click', (ev) => {
+            const id = ev.currentTarget.getAttribute('data-id');
+            toggleCartItem(id);
+        }));
+    }
+
+    function renderCart(){
+        const box = document.getElementById('cartBox');
+        const itemsEl = document.getElementById('cartItems');
+        if(cart.length === 0){ box.style.display = 'none'; itemsEl.innerHTML = ''; document.getElementById('cartTotal').textContent = '—'; return; }
+        box.style.display = 'block';
+        itemsEl.innerHTML = '';
+        let total = 0;
+        cart.forEach(id => {
+            const s = services.find(x=> x.id == id);
+            if(!s) return;
+            total += s.price;
+            const row = document.createElement('div');
+            row.style.display = 'flex'; row.style.justifyContent='space-between'; row.style.alignItems='center'; row.style.marginTop='6px';
+            row.innerHTML = `<div>${s.title} <small class="muted">₹${s.price}</small></div>`;
+            const btn = document.createElement('button'); btn.className='btn btn-sm btn-outline'; btn.textContent='Remove';
+            btn.addEventListener('click', ()=>{ cart = cart.filter(x=> x!== id); document.querySelectorAll(`.service-pill`).forEach(p=> p.classList.toggle('selected', cart.includes(Number(p.dataset.id)))); renderCart(); updateSummaryUI(); });
+            row.appendChild(btn);
+            itemsEl.appendChild(row);
+        });
+        document.getElementById('cartTotal').textContent = total ? ('₹' + total) : '—';
+    }
+
+    function toggleCartItem(id){
+        const idNum = Number(id);
+        if(cart.includes(idNum)) cart = cart.filter(x=>x!==idNum);
+        else cart.push(idNum);
+        // update selected UI
+        document.querySelectorAll('.service-pill').forEach(p => p.classList.toggle('selected', cart.includes(Number(p.dataset.id))));
+        // set primary service (first in cart) for summary
+        const primary = services.find(x=> x.id == cart[0]);
+        currentBooking.service = primary || null;
+    renderCart();
+    updateSummaryUI();
+    }
+
+    // Booking state (in-memory)
+    const currentBooking = { service: null, location: '', date: '', time: '', worker: null, paymentMethod: 'card' };
+
+    function updateSummaryUI(){
+        document.getElementById('sumLocation').textContent = currentBooking.location || '(not set)';
+        document.getElementById('sumDate').textContent = currentBooking.date || '-';
+        document.getElementById('sumTime').textContent = currentBooking.time || '';
+        document.getElementById('sumWorker').textContent = currentBooking.worker?.name || 'Assigned later';
+    // show selected services (comma-separated)
+    const selectedTitles = cart.map(id => { const s = services.find(x=> x.id == id); return s ? s.title : null; }).filter(Boolean);
+    document.getElementById('sumService').textContent = selectedTitles.length ? selectedTitles.join(', ') : '(none)';
+    // compute total from cart
+    const total = cart.reduce((sum, id) => { const s = services.find(x=> x.id == id); return sum + (s ? s.price : 0); }, 0);
+    document.getElementById('sumPrice').textContent = total ? '₹' + total : '—';
+    // if payment area shows, update any pay amount display
+    const payAmountEl = document.getElementById('payAmount');
+    if(payAmountEl) payAmountEl.textContent = total ? ('₹' + total) : '—';
+    }
+
+    function renderWorkerSelect(){
+        const sel = document.getElementById('workerSelect');
+        if(!sel) return;
+        sel.innerHTML = '<option value="">Any available</option>';
+        workers.forEach(w=>{
+            const label = w.name + (w.avgRating ? (' — ' + w.avgRating + '★' + (w.reviewCount?(' ('+w.reviewCount+')'):'') ) : '');
+            const opt = document.createElement('option'); opt.value = w.id; opt.textContent = label;
+            sel.appendChild(opt);
+        });
+        sel.addEventListener('change', ()=>{
+            const id = sel.value; currentBooking.worker = workers.find(x=>String(x.id)===String(id)) || null; updateSummaryUI();
+        });
+    }
+
+    // Parse query params to prefill fields
+    function parseQuery(){
+        const q = window.location.search.substring(1);
+        const params = {};
+        q.split('&').forEach(pair => { if(!pair) return; const [k,v] = pair.split('='); params[k] = decodeURIComponent(v || ''); });
+        return params;
+    }
+
+    function prefillFromQuery(){
+        const p = parseQuery();
+        if(p.address) document.getElementById('location').value = p.address;
+        if(p.date) document.getElementById('date').value = p.date;
+        if(p.time) document.getElementById('time').value = p.time;
+        if(p.service){
+            // service in query may be numeric id
+            const sid = Number(p.service);
+            const s = services.find(x=> x.id == sid);
+            if(s) { toggleCartItem(s.id); }
+        }
+        // update in-memory
+        currentBooking.location = document.getElementById('location').value.trim();
+        currentBooking.date = document.getElementById('date').value;
+        currentBooking.time = document.getElementById('time').value;
+        updateSummaryUI();
+    }
+
+    // Wire form controls
+    document.getElementById('location').addEventListener('input', (e) => { currentBooking.location = e.target.value.trim(); updateSummaryUI(); });
+    document.getElementById('date').addEventListener('change', (e) => { currentBooking.date = e.target.value; updateSummaryUI(); });
+    document.getElementById('time').addEventListener('change', (e) => { currentBooking.time = e.target.value; updateSummaryUI(); });
+
+    document.getElementById('proceed').addEventListener('click', () => {
+        if(!currentBooking.location || !currentBooking.date || !currentBooking.time) { alert('Please fill location, date and time.'); return; }
+        if(cart.length === 0) { alert('Please select at least one service.'); return; }
+        // show payment area in aside
+        document.getElementById('paymentArea').style.display = 'block';
+        document.getElementById('payNow').scrollIntoView({behavior:'smooth'});
+    });
+
+    document.getElementById('prevStep').addEventListener('click', ()=>{
+        // reset
+        currentBooking.service = null; currentBooking.location=''; currentBooking.date=''; currentBooking.time='';
+        document.getElementById('location').value=''; document.getElementById('date').value=''; document.getElementById('time').value='';
+        renderServiceList(); updateSummaryUI();
+    });
+
+    // add payment method radio options
+    const payHtml = document.createElement('div');
+    payHtml.innerHTML = `
+        <label style="display:block;margin-top:8px"><input type="radio" name="payMethod" value="card" checked> Card</label>
+        <label style="display:block"><input type="radio" name="payMethod" value="upi"> UPI</label>
+        <label style="display:block"><input type="radio" name="payMethod" value="cash"> Cash</label>
+    `;
+    document.getElementById('paymentArea').insertBefore(payHtml, document.getElementById('cardName'));
+
+    document.getElementById('payNow').addEventListener('click', async ()=>{
+        // basic validation
+        const payMethod = document.querySelector('input[name="payMethod"]:checked')?.value || 'card';
+        currentBooking.paymentMethod = payMethod;
+        if(payMethod === 'card'){
+            const cname = document.getElementById('cardName').value.trim();
+            const cnum = document.getElementById('cardNumber').value.trim();
+            const exp = document.getElementById('cardExpiry').value.trim();
+            const cvv = document.getElementById('cardCvv').value.trim();
+            if(!cname || !cnum || !exp || !cvv){ alert('Please fill card details.'); return; }
+        }
+        const btn = document.getElementById('payNow');
+        btn.disabled = true; btn.textContent = 'Processing...';
+        try{
+            const booking = await finalizeBooking();
+            showConfirmation(booking);
+        }catch(err){
+            console.error(err);
+            alert('Failed to submit booking. Check console for details.');
+        }finally{
+            btn.disabled = false; btn.textContent = 'Pay & Confirm';
+        }
+    });
+
+    async function finalizeBooking(){
+        const selectedServices = cart.map(id => id);
+        const total = cart.reduce((sum, id) => { const s = services.find(x=> x.id == id); return sum + (s? s.price : 0); }, 0);
+        const payload = {
+            serviceId: currentBooking.service?.id || '',
+            serviceName: currentBooking.service?.title || '(unknown)',
+            serviceIds: selectedServices.join(','),
+            amount: total,
+            location: currentBooking.location,
+            date: currentBooking.date,
+            time: currentBooking.time,
+            userName: localStorage.getItem('username') || '',
+            userPhone: '',
+            workerAssigned: currentBooking.worker?.name || '',
+            paidWith: currentBooking.paymentMethod || 'card'
+        };
+        // POST to backend API
+        const res = await fetch(API_BASE + '/api/bookings', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), mode: 'cors'
+        });
+        if(!res.ok) throw new Error('Booking API returned ' + res.status);
+        const created = await res.json();
+        return created;
+    }
+
+    function showConfirmation(b){
+        document.getElementById('confirmation').style.display = 'block';
+        document.getElementById('confirmMsg').textContent = 'Payment processed — your booking is confirmed.';
+        document.getElementById('bookingDetails').innerHTML = `
+            <strong>Booking ID:</strong> ${b.id}<br>
+            <strong>Service:</strong> ${b.service}<br>
+            <strong>Date & Time:</strong> ${b.date} ${b.time}<br>
+            <strong>Location:</strong> ${b.location}<br>
+            <strong>Worker:</strong> ${b.worker}<br>
+            <strong>Paid with:</strong> ${b.paidWith}
+        `;
+        // hide main card
+        document.querySelector('.card.steps').style.display = 'none';
+        // reset payment button
+        document.getElementById('payNow').disabled = false; document.getElementById('payNow').textContent = 'Pay & Confirm';
+    }
+
+    // Initialize: load services and workers first, then prefill and render UI
+    (async function init(){
+        try{
+            await loadServices();
+            await loadWorkersForBooking();
+            prefillFromQuery();
+            updateSummaryUI();
+        }catch(err){
+            console.error('Initialization error', err);
+            // graceful fallback
+            renderServiceList();
+            updateSummaryUI();
+        }
+    })();
+</script>
+</body>
+</html>

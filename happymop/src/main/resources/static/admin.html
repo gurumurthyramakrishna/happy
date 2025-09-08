@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin Dashboard - Happy Mop</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f8;color:#222;margin:0;padding:20px}
+    .container{max-width:1100px;margin:0 auto}
+    header{display:flex;justify-content:space-between;align-items:center}
+    h1{margin:0}
+    .login-box{background:#fff;padding:20px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.06);max-width:420px}
+    .panel{background:#fff;padding:14px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.06);margin-top:16px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}
+    th{background:#fafafa}
+    .actions{display:flex;gap:8px}
+    .btn{padding:8px 12px;border-radius:6px;border:none;cursor:pointer}
+    .btn-danger{background:#d9534f;color:#fff}
+    .btn-primary{background:#0078d4;color:#fff}
+    .muted{color:#666;font-size:14px}
+    .top-actions{display:flex;gap:8px;align-items:center}
+    .section-title{display:flex;justify-content:space-between;align-items:center}
+    textarea{width:100%;height:140px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Admin Dashboard</h1>
+      <div class="top-actions">
+        <button id="logoutBtn" class="btn">Logout</button>
+      </div>
+    </header>
+
+    <div id="authArea"></div>
+
+    <div id="dashboard" style="display:none">
+      <div class="panel">
+        <div class="section-title">
+          <h2>Bookings</h2>
+          <div class="actions">
+            <button id="exportBookings" class="btn btn-primary">Export JSON</button>
+            <button id="clearBookings" class="btn btn-danger">Clear All</button>
+          </div>
+        </div>
+        <div id="bookingsCount" class="muted"></div>
+        <div style="overflow:auto;margin-top:12px">
+          <table id="bookingsTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>User</th>
+                <th>Service</th>
+                <th>Worker</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Location</th>
+                <th>Paid</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">
+          <h2>Feedback</h2>
+          <div class="actions">
+            <button id="exportFeedback" class="btn btn-primary">Export JSON</button>
+            <button id="clearFeedback" class="btn btn-danger">Clear All</button>
+          </div>
+        </div>
+        <div id="feedbackCount" class="muted"></div>
+        <div style="margin-top:12px">
+          <table id="feedbackTable">
+            <thead>
+              <tr><th>#</th><th>Name</th><th>Rating</th><th>Comments</th><th>Email</th><th>Date</th><th>Actions</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Workers panel -->
+      <div class="panel">
+        <div class="section-title">
+          <h2>Workers</h2>
+          <div class="actions">
+            <button id="addWorkerBtn" class="btn btn-primary">Add Worker</button>
+          </div>
+        </div>
+        <div id="workersInfo" class="muted" style="margin-top:6px"></div>
+        <div style="margin-top:12px">
+          <table id="workersTable">
+            <thead>
+              <tr><th>ID</th><th>Name</th><th>Assigned</th><th>Completed</th><th>Actions</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">
+          <h2>Worker Applications</h2>
+          <div class="actions">
+            <button id="refreshApps" class="btn">Refresh</button>
+            <button id="clearApps" class="btn btn-danger">Clear All</button>
+          </div>
+        </div>
+        <div id="appsInfo" class="muted" style="margin-top:6px"></div>
+        <div style="margin-top:12px">
+          <table id="appsTable">
+            <thead>
+              <tr><th>ID</th><th>Name</th><th>Phone</th><th>Services</th><th>Area</th><th>Applied</th><th>Actions</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Quick Insights</h2>
+        <p class="muted">Search bookings and view basic stats (client-side filter).</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <input id="bookingSearch" placeholder="Search user, service, worker or location" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px">
+          <select id="statusFilter" style="padding:8px;border:1px solid #ddd;border-radius:6px">
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="assigned">Assigned</option>
+            <option value="completed">Completed</option>
+          </select>
+          <button id="applyFilter" class="btn">Apply</button>
+          <button id="clearFilter" class="btn">Clear</button>
+        </div>
+        <div id="insights" style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap">
+          <div class="muted">Total: <strong id="statTotal">0</strong></div>
+          <div class="muted">Pending: <strong id="statPending">0</strong></div>
+          <div class="muted">Assigned: <strong id="statAssigned">0</strong></div>
+          <div class="muted">Completed: <strong id="statCompleted">0</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // Simple admin authentication for local demo
+  const ADMIN_KEY = 'isAdmin';
+  const ADMIN_PASS = 'admin123'; // change or remove for production
+
+  function showLogin(){
+    const authArea = document.getElementById('authArea');
+    authArea.innerHTML = `
+      <div class="login-box">
+        <h3>Admin Sign-in</h3>
+        <p class="muted">Enter admin password to view data (demo only).</p>
+        <input id="adminPass" type="password" placeholder="Password" style="width:100%;padding:8px;margin-top:8px"><br>
+        <div style="margin-top:10px">
+          <button id="adminLoginBtn" class="btn btn-primary">Sign In</button>
+        </div>
+        <div id="authMsg" class="muted" style="margin-top:10px"></div>
+      </div>
+    `;
+    document.getElementById('adminLoginBtn').addEventListener('click', function(){
+      const val = document.getElementById('adminPass').value;
+      if(val === ADMIN_PASS){
+        localStorage.setItem(ADMIN_KEY,'true');
+        renderDashboard();
+      } else {
+        document.getElementById('authMsg').textContent = 'Incorrect password.';
+      }
+    });
+  }
+
+  function renderDashboard(){
+    document.getElementById('authArea').innerHTML = '';
+    document.getElementById('dashboard').style.display = 'block';
+    loadBookings();
+    loadFeedback();
+    loadWorkers();
+    loadApplications();
+  const lb = document.getElementById('logoutBtn'); if(lb) lb.onclick = adminLogout;
+
+    document.getElementById('exportBookings').addEventListener('click', async function(){
+      try{ const res = await fetch('/api/bookings'); const all = await res.json(); download('bookings.json', JSON.stringify(all, null, 2)); }catch(e){ alert('Failed to export bookings'); }
+    });
+    document.getElementById('exportFeedback').addEventListener('click', async function(){
+      try{ const res = await fetch('/api/feedbacks'); const all = await res.json(); download('feedbacks.json', JSON.stringify(all, null, 2)); }catch(e){ alert('Failed to export feedback'); }
+    });
+
+    document.getElementById('clearBookings').addEventListener('click', async function(){
+      if(confirm('Clear all bookings? This cannot be undone.')){
+        try{ const res = await fetch('/api/bookings'); const all = await res.json(); for(const b of all){ await fetch('/api/bookings/' + b.id, { method: 'DELETE' }); } loadBookings(); }catch(e){ alert('Failed to clear bookings'); }
+      }
+    });
+    document.getElementById('clearFeedback').addEventListener('click', async function(){
+      if(confirm('Clear all feedback? This cannot be undone.')){
+        try{ const res = await fetch('/api/feedbacks'); const all = await res.json(); for(const f of all){ await fetch('/api/feedbacks/' + f.id, { method: 'DELETE' }).catch(()=>{}); } loadFeedback(); }catch(e){ alert('Failed to clear feedback'); }
+      }
+    });
+    document.getElementById('clearApps').addEventListener('click', async function(){
+      if(confirm('Clear all worker applications? This cannot be undone.')){
+        try{ const res = await fetch('/api/admin/applications'); const all = await res.json(); for(const a of all){ await fetch('/api/admin/applications/' + a.id + '/reject', { method: 'POST' }).catch(()=>{}); } loadApplications(); }catch(e){ alert('Failed to clear applications'); }
+      }
+    });
+
+    document.getElementById('addWorkerBtn').addEventListener('click', async function(){
+      const name = prompt('Enter worker name:');
+      if(name){
+        try{ const res = await fetch('/api/workers', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) }); if(!res.ok) throw new Error('create worker failed'); loadWorkers(); loadBookings(); }catch(e){ alert('Failed to add worker'); }
+      }
+    });
+  }
+
+  function adminLogout(){
+  // clear admin and user demo flags and return to login UI without a full reload
+  localStorage.removeItem(ADMIN_KEY);
+  try{ localStorage.removeItem('isLoggedIn'); localStorage.removeItem('username'); }catch(e){}
+  // hide dashboard and show login form
+  const dash = document.getElementById('dashboard'); if(dash) dash.style.display = 'none';
+  showLogin();
+  }
+
+  async function loadBookings(){
+    try{
+      const res = await fetch('/api/bookings');
+      if(!res.ok) throw new Error('Failed to load bookings');
+      const raw = await res.json();
+      const tbody = document.querySelector('#bookingsTable tbody');
+      tbody.innerHTML = '';
+      document.getElementById('bookingsCount').textContent = raw.length + ' booking(s)';
+      raw.slice().reverse().forEach(b => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(b.id||'')}</td>
+          <td>${escapeHtml(b.userName||b.user||'')}</td>
+          <td>${escapeHtml(b.serviceName||b.service||'')}</td>
+          <td>${escapeHtml(b.workerAssigned||'')}</td>
+          <td>${escapeHtml(b.date||'')}</td>
+          <td>${escapeHtml(b.time||'')}</td>
+          <td>${escapeHtml(b.location||'')}</td>
+          <td>${escapeHtml(b.paidWith||'')}</td>
+          <td>${escapeHtml(b.status||'pending')}</td>
+          <td>
+            <div class="actions">
+              <button class="btn btn-primary" data-assign="${b.id}">Assign</button>
+              <button class="btn" data-complete="${b.id}">Mark Complete</button>
+              <button class="btn btn-danger" data-id="${b.id}">Delete</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      // wire buttons
+      document.querySelectorAll('#bookingsTable button[data-id]').forEach(btn=> btn.addEventListener('click', function(){ deleteBooking(this.getAttribute('data-id')); }));
+      document.querySelectorAll('#bookingsTable button[data-assign]').forEach(btn=> btn.addEventListener('click', function(){ openAssignDialog(this.getAttribute('data-assign')); }));
+      document.querySelectorAll('#bookingsTable button[data-complete]').forEach(btn=> btn.addEventListener('click', function(){ markCompleted(this.getAttribute('data-complete')); }));
+      // cache bookings for client-side filters and insights
+      window.bookingsCache = raw.slice();
+      renderWorkerStats();
+      // update stats and wire filter controls
+      updateInsights();
+      document.getElementById('applyFilter')?.addEventListener('click', applyBookingFilter);
+      document.getElementById('clearFilter')?.addEventListener('click', function(){ document.getElementById('bookingSearch').value=''; document.getElementById('statusFilter').value=''; applyBookingFilter(); });
+    }catch(err){ console.error(err); document.getElementById('bookingsCount').textContent = 'Failed to load bookings'; }
+  }
+
+  function applyBookingFilter(){
+    const q = (document.getElementById('bookingSearch').value||'').toLowerCase().trim();
+    const status = document.getElementById('statusFilter').value;
+    const list = (window.bookingsCache||[]).filter(b=>{
+      if(status && String((b.status||'')).toLowerCase() !== String(status).toLowerCase()) return false;
+      if(!q) return true;
+      return String(b.userName||b.serviceName||b.workerAssigned||b.location||'').toLowerCase().includes(q);
+    });
+    // reuse rendering: clear table and render list
+    const tbody = document.querySelector('#bookingsTable tbody'); tbody.innerHTML = '';
+    list.slice().reverse().forEach(b => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(b.id||'')}</td>
+        <td>${escapeHtml(b.userName||b.user||'')}</td>
+        <td>${escapeHtml(b.serviceName||b.service||'')}</td>
+        <td>${escapeHtml(b.workerAssigned||'')}</td>
+        <td>${escapeHtml(b.date||'')}</td>
+        <td>${escapeHtml(b.time||'')}</td>
+        <td>${escapeHtml(b.location||'')}</td>
+        <td>${escapeHtml(b.paidWith||'')}</td>
+        <td>${escapeHtml(b.status||'pending')}</td>
+        <td>
+          <div class="actions">
+            <button class="btn btn-primary" data-assign="${b.id}">Assign</button>
+            <button class="btn" data-complete="${b.id}">Mark Complete</button>
+            <button class="btn btn-danger" data-id="${b.id}">Delete</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+    document.querySelectorAll('#bookingsTable button[data-id]').forEach(btn=> btn.addEventListener('click', function(){ deleteBooking(this.getAttribute('data-id')); }));
+    document.querySelectorAll('#bookingsTable button[data-assign]').forEach(btn=> btn.addEventListener('click', function(){ openAssignDialog(this.getAttribute('data-assign')); }));
+    document.querySelectorAll('#bookingsTable button[data-complete]').forEach(btn=> btn.addEventListener('click', function(){ markCompleted(this.getAttribute('data-complete')); }));
+    updateInsights();
+  }
+
+  function updateInsights(){
+    const all = window.bookingsCache||[];
+    document.getElementById('statTotal').textContent = all.length;
+    document.getElementById('statPending').textContent = all.filter(x=> (x.status||'').toLowerCase()==='pending').length;
+    document.getElementById('statAssigned').textContent = all.filter(x=> (x.status||'').toLowerCase()==='assigned').length;
+    document.getElementById('statCompleted').textContent = all.filter(x=> (x.status||'').toLowerCase()==='completed').length;
+  }
+
+  // Worker management
+  async function loadWorkers(){
+    try{
+      const res = await fetch('/api/workers'); if(!res.ok) throw new Error('Failed to load workers');
+      const raw = await res.json();
+      const tbody = document.querySelector('#workersTable tbody'); tbody.innerHTML = '';
+      raw.forEach(w=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(w.id)}</td>
+          <td>${escapeHtml(w.name)}</td>
+          <td>${w.assignedCount||0}</td>
+          <td>${w.completedCount||0}</td>
+          <td><div class="actions"><button class="btn btn-danger" data-wid="${w.id}">Delete</button></div></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      document.querySelectorAll('#workersTable button[data-wid]').forEach(btn=> btn.addEventListener('click', function(){ deleteWorker(this.getAttribute('data-wid')); }));
+      document.getElementById('workersInfo').textContent = raw.length + ' worker(s) registered.';
+    }catch(err){ console.error(err); document.getElementById('workersInfo').textContent = 'Failed to load workers'; }
+  }
+
+  // Worker Applications
+  async function loadApplications(){
+    try{
+      const res = await fetch('/api/admin/applications'); if(!res.ok) throw new Error('Failed');
+      const raw = await res.json();
+      const tbody = document.querySelector('#appsTable tbody'); tbody.innerHTML = '';
+      document.getElementById('appsInfo').textContent = raw.length + ' application(s)';
+      raw.slice().reverse().forEach(app => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(app.id)}</td>
+          <td>${escapeHtml(app.name)}</td>
+          <td>${escapeHtml(app.phone)}</td>
+          <td>${escapeHtml((app.services||[]).join(', '))}</td>
+          <td>${escapeHtml(app.area||'')}</td>
+          <td>${new Date(app.appliedAt).toLocaleString()}</td>
+          <td>
+            <div class="actions">
+              <button class="btn btn-primary" data-approve="${app.id}">Approve</button>
+              <button class="btn btn-danger" data-reject="${app.id}">Reject</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      document.querySelectorAll('#appsTable button[data-approve]').forEach(btn=> btn.addEventListener('click', function(){ approveApplication(this.getAttribute('data-approve')); }));
+      document.querySelectorAll('#appsTable button[data-reject]').forEach(btn=> btn.addEventListener('click', function(){ rejectApplication(this.getAttribute('data-reject')); }));
+    }catch(err){ console.error(err); document.getElementById('appsInfo').textContent = 'Failed to load applications'; }
+  }
+
+  async function approveApplication(id){
+    try{
+      const res = await fetch('/api/admin/applications/' + id + '/approve', { method: 'POST' });
+      if(!res.ok) throw new Error('Approve failed');
+      await loadApplications(); await loadWorkers();
+      alert('Application approved and worker added.');
+    }catch(err){ console.error(err); alert('Failed to approve application'); }
+  }
+
+  async function rejectApplication(id){
+    try{ const res = await fetch('/api/admin/applications/' + id + '/reject', { method: 'POST' }); if(!res.ok) throw new Error('Reject failed'); await loadApplications(); }catch(err){ console.error(err); alert('Failed to reject application'); }
+  }
+
+  document.getElementById('refreshApps')?.addEventListener('click', loadApplications);
+
+  // initial server-backed load
+  loadWorkers(); loadApplications();
+
+  async function addWorker(name){
+    try{ await fetch('/api/workers', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) }); await loadWorkers(); await loadBookings(); }catch(err){ console.error(err); alert('Failed to add worker'); }
+  }
+
+  async function deleteWorker(id){
+    try{ const res = await fetch('/api/workers/' + id, { method: 'DELETE' }); if(!res.ok) throw new Error('delete failed'); await loadWorkers(); await loadBookings(); }catch(err){ console.error(err); alert('Failed to delete worker'); }
+  }
+
+  function openAssignDialog(bookingId){
+    const name = prompt('Enter worker ID to assign (leave blank to cancel).\nUse shown worker IDs from Workers table.');
+    if(!name) return;
+    assignWorker(bookingId, name);
+  }
+
+  async function assignWorker(bookingId, workerId){
+    try{
+  // Fetch the booking by id, update the workerAssigned/status and send a PUT to update server-side
+  const bRes = await fetch('/api/bookings/' + bookingId);
+  if(!bRes.ok) return alert('Booking not found');
+  const b = await bRes.json();
+  // fetch worker
+  const wRes = await fetch('/api/workers/' + workerId);
+  if(!wRes.ok) return alert('Worker not found');
+  const w = await wRes.json();
+  b.workerAssigned = w.name;
+  b.status = 'assigned';
+  const upd = await fetch('/api/bookings/' + bookingId, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(b) });
+  if(!upd.ok) throw new Error('Update failed');
+  await loadBookings(); await loadWorkers();
+    }catch(err){ console.error(err); alert('Failed to assign worker'); }
+  }
+
+  async function markCompleted(bookingId){
+    try{
+  const res = await fetch('/api/bookings/' + bookingId);
+  if(!res.ok) return alert('Booking not found');
+  const b = await res.json();
+  b.status = 'completed';
+  const upd = await fetch('/api/bookings/' + bookingId, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(b) });
+  if(!upd.ok) throw new Error('Update failed');
+  await loadBookings(); await loadWorkers();
+    }catch(err){ console.error(err); alert('Failed to mark completed'); }
+  }
+
+  function renderWorkerStats(){
+    // Optionally fetch aggregated stats from server. For now this is a no-op.
+  }
+
+  // Initial load of server data
+  loadWorkers(); loadApplications();
+
+  // Init
+  if(localStorage.getItem(ADMIN_KEY) === 'true'){
+    renderDashboard();
+  } else {
+    showLogin();
+  }
+</script>
+</body>
+</html>
