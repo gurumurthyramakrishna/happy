@@ -119,8 +119,8 @@
 
 <script>
     // services will be fetched from backend /api/services
-    // API_BASE chooses the backend host: when the page is opened via file:// we fallback to localhost:8080
-    const API_BASE = (window.location.protocol === 'file:' || window.location.origin === 'null') ? 'http://localhost:8080' : window.location.origin;
+    // API_BASE chooses the backend host: when the page is opened via file:// we fallback to localhost:8081 (matches Spring Boot dev port)
+    const API_BASE = (window.location.protocol === 'file:' || window.location.origin === 'null') ? 'http://localhost:8081' : window.location.origin;
     let services = [];
     let lastServiceError = null;
     let cart = []; // array of service codes/ids
