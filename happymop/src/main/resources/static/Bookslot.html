@@ -345,8 +345,8 @@
             const booking = await finalizeBooking();
             showConfirmation(booking);
         }catch(err){
-            console.error(err);
-            alert('Failed to submit booking. Check console for details.');
+            console.error('Booking submission failed:', err);
+            alert('Failed to submit booking: ' + (err && err.message ? err.message : String(err)));
         }finally{
             btn.disabled = false; btn.textContent = 'Pay & Confirm';
         }
