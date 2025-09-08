@@ -370,10 +370,15 @@
         };
         // POST to backend API
         const res = await fetch(API_BASE + '/api/bookings', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), mode: 'cors'
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(payload), mode: 'cors'
         });
-        if(!res.ok) throw new Error('Booking API returned ' + res.status);
-        const created = await res.json();
+        if(!res.ok){
+            const text = await res.text().catch(()=> '');
+            throw new Error('Booking API returned ' + res.status + (text?(' - ' + text):''));
+        }
+        let created;
+        try{ created = await res.json(); }
+        catch(e){ created = { id: '(unknown)', ...payload }; }
         return created;
     }
 
@@ -381,12 +386,12 @@
         document.getElementById('confirmation').style.display = 'block';
         document.getElementById('confirmMsg').textContent = 'Payment processed — your booking is confirmed.';
         document.getElementById('bookingDetails').innerHTML = `
-            <strong>Booking ID:</strong> ${b.id}<br>
-            <strong>Service:</strong> ${b.service}<br>
-            <strong>Date & Time:</strong> ${b.date} ${b.time}<br>
-            <strong>Location:</strong> ${b.location}<br>
-            <strong>Worker:</strong> ${b.worker}<br>
-            <strong>Paid with:</strong> ${b.paidWith}
+            <strong>Booking ID:</strong> ${b.id||''}<br>
+            <strong>Service:</strong> ${b.serviceName||b.service||''}<br>
+            <strong>Date & Time:</strong> ${b.date||''} ${b.time||''}<br>
+            <strong>Location:</strong> ${b.location||''}<br>
+            <strong>Worker:</strong> ${b.workerAssigned||b.worker||'Assigned later'}<br>
+            <strong>Paid with:</strong> ${b.paidWith||''}
         `;
         // hide main card
         document.querySelector('.card.steps').style.display = 'none';
