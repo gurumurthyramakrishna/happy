@@ -380,13 +380,17 @@
     function showConfirmation(b){
         document.getElementById('confirmation').style.display = 'block';
         document.getElementById('confirmMsg').textContent = 'Payment processed — your booking is confirmed.';
+        const svc = b.serviceName || (currentBooking.service && currentBooking.service.title) || '(unknown)';
+        const wrk = b.workerAssigned || 'Assigned later';
+        const amt = (typeof b.amount === 'number' && b.amount > 0) ? `₹${b.amount}` : document.getElementById('sumPrice').textContent || '—';
         document.getElementById('bookingDetails').innerHTML = `
             <strong>Booking ID:</strong> ${b.id}<br>
-            <strong>Service:</strong> ${b.service}<br>
+            <strong>Service:</strong> ${svc}<br>
             <strong>Date & Time:</strong> ${b.date} ${b.time}<br>
             <strong>Location:</strong> ${b.location}<br>
-            <strong>Worker:</strong> ${b.worker}<br>
-            <strong>Paid with:</strong> ${b.paidWith}
+            <strong>Worker:</strong> ${wrk}<br>
+            <strong>Paid with:</strong> ${b.paidWith || currentBooking.paymentMethod}<br>
+            <strong>Amount:</strong> ${amt}
         `;
         // hide main card
         document.querySelector('.card.steps').style.display = 'none';
