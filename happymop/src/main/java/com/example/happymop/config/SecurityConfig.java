@@ -14,8 +14,8 @@ public class SecurityConfig {
         http
             .csrf().disable() // API is called from same-origin JS; if you enable csrf, adapt client to send token
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/bookings/**", "/api/workers/**", "/api/admin/applications/**", "/api/admin/applications", "/**/*.html", "/", "/index.html", "/**").permitAll()
-                .anyRequest().authenticated()
+                .requestMatchers("/api/users/**", "/api/bookings/**", "/api/workers/**", "/api/admin/applications/**", "/api/services/**", "/api/images/**", "/**/*.html", "/", "/index.html", "/static/**", "/**").permitAll()
+                .anyRequest().permitAll()
             )
             .httpBasic(Customizer.withDefaults());
         return http.build();

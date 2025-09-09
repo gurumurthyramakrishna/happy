@@ -21,16 +21,21 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User u){
         try {
+            System.out.println("Registration request received for email: " + u.getEmail());
             // Check if user already exists
             if (svc.findByEmail(u.getEmail()).isPresent()) {
+                System.out.println("User already exists with email: " + u.getEmail());
                 return ResponseEntity.badRequest().body("{\"error\":\"User already exists with this email\"}");
             }
             User created = svc.create(u);
+            System.out.println("User created successfully with ID: " + created.getId());
             // Don't return password in response
             created.setPassword(null);
             return ResponseEntity.created(URI.create("/api/users/"+created.getId())).body(created);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("{\"error\":\"Registration failed\"}");
+            System.err.println("Registration failed: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("{\"error\":\"Registration failed: " + e.getMessage() + "\"}");
         }
     }
 

@@ -19,10 +19,32 @@ public class AdminController {
     public AdminController(WorkerApplicationService appSvc, WorkerService workerSvc){ this.appSvc = appSvc; this.workerSvc = workerSvc; }
 
     @GetMapping("/applications")
-    public List<WorkerApplication> apps(){ return appSvc.all(); }
+    public ResponseEntity<List<WorkerApplication>> apps(){
+        try {
+            System.out.println("Admin: Fetching worker applications");
+            List<WorkerApplication> applications = appSvc.all();
+            System.out.println("Admin: Found " + applications.size() + " applications");
+            return ResponseEntity.ok(applications);
+        } catch (Exception e) {
+            System.err.println("Admin: Failed to fetch applications: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 
     @PostMapping("/applications")
-    public ResponseEntity<WorkerApplication> createApp(@RequestBody WorkerApplication a){ WorkerApplication created = appSvc.create(a); return ResponseEntity.created(URI.create("/api/admin/applications/"+created.getId())).body(created); }
+    public ResponseEntity<WorkerApplication> createApp(@RequestBody WorkerApplication a){
+        try {
+            System.out.println("Admin: Creating worker application for: " + a.getName());
+            WorkerApplication created = appSvc.create(a);
+            System.out.println("Admin: Application created with ID: " + created.getId());
+            return ResponseEntity.created(URI.create("/api/admin/applications/"+created.getId())).body(created);
+        } catch (Exception e) {
+            System.err.println("Admin: Failed to create application: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
     @PostMapping("/applications/{id}/approve")
     public ResponseEntity<Worker> approve(@PathVariable Long id){
